@@ -282,8 +282,22 @@ export async function getTotalSalesByUserId(userId: number) {
 export async function getTotalProfitByUserId(userId: number) {
   const db = await getDb();
   if (!db) return "0";
-  const result = await db.select({ total: sum(sales.profit) }).from(sales).where(eq(sales.userId, userId));
-  return result[0]?.total?.toString() || "0";
+  
+  // Get total profit from sales
+  const salesResult = await db.select({ total: sum(sales.profit) }).from(sales).where(eq(sales.userId, userId));
+  const totalSalesProfit = parseFloat(salesResult[0]?.total?.toString() || "0");
+  
+  // Get total expenses
+  const expensesResult = await db.select({ total: sum(expenses.amount) }).from(expenses).where(eq(expenses.userId, userId));
+  const totalExpenses = parseFloat(expensesResult[0]?.total?.toString() || "0");
+  
+  // Get total other income
+  const incomeResult = await db.select({ total: sum(otherIncome.amount) }).from(otherIncome).where(eq(otherIncome.userId, userId));
+  const totalOtherIncome = parseFloat(incomeResult[0]?.total?.toString() || "0");
+  
+  // Net Profit = Sales Profit - Expenses + Other Income
+  const netProfit = totalSalesProfit - totalExpenses + totalOtherIncome;
+  return netProfit.toFixed(2);
 }
 
 export async function getTotalExpensesByUserId(userId: number) {
