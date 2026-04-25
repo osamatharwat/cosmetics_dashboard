@@ -15,50 +15,50 @@
 - [x] Backend form validation
 
 ## Phase 3: Frontend Layout
-- [ ] DashboardLayout component with sidebar navigation
-- [ ] Global theme setup (dark/light mode)
-- [ ] Navigation structure and routing
-- [ ] Authentication pages (login/register)
+- [x] DashboardLayout component with sidebar navigation
+- [x] Global theme setup (dark/light mode)
+- [x] Navigation structure and routing
+- [x] Authentication pages (login/register)
 
 ## Phase 4: Dashboard & Analytics
-- [ ] KPI cards (total sales, net profit, inventory value, best-sellers)
-- [ ] Sales-over-time chart
-- [ ] Profit-trend chart
-- [ ] Low-stock alerts
-- [ ] Expiring-batch alerts
+- [x] KPI cards (total sales, net profit, inventory value, best-sellers)
+- [x] Sales-over-time chart
+- [x] Profit-trend chart
+- [x] Low-stock alerts
+- [x] Expiring-batch alerts
 
 ## Phase 5: Production & Batch Management
-- [ ] Batch creation form with auto-calculated cost-per-unit
-- [ ] Batch list view with edit/delete
-- [ ] Batch detail view with profit analysis
-- [ ] FIFO batch linking support
+- [x] Batch creation form with auto-calculated cost-per-unit
+- [x] Batch list view with edit/delete
+- [x] Batch detail view with profit analysis
+- [x] FIFO batch linking support
 
 ## Phase 6: Inventory & Sales Management
-- [ ] Product management (add/edit/delete)
-- [ ] Inventory view with stock levels and values
-- [ ] Sales creation form with auto-calculated totals
-- [ ] Sales history with date filters
-- [ ] Profit-per-sale calculations
+- [x] Product management (add/edit/delete)
+- [x] Inventory view with stock levels and values
+- [x] Sales creation form with auto-calculated totals
+- [x] Sales history with date filters
+- [x] Profit-per-sale calculations
 
 ## Phase 7: Financials & Reporting
-- [ ] Expense tracking by category
-- [ ] Other income tracking
-- [ ] Monthly financial summary
-- [ ] Cash flow visualization
-- [ ] Export to CSV/Excel
-- [ ] Profit-per-product view
-- [ ] Profit-per-batch view
+- [x] Expense tracking by category
+- [x] Other income tracking
+- [x] Monthly financial summary
+- [x] Cash flow visualization
+- [x] Export to CSV/Excel
+- [x] Profit-per-product view
+- [x] Profit-per-batch view
 
 ## Phase 8: Advanced Features
-- [ ] Cost breakdown and pricing tool
-- [ ] Suggested selling price calculator
-- [ ] In-app notifications for alerts
-- [ ] Dark mode toggle
-- [ ] Date range filters for reports
-- [ ] Form validation (frontend + backend)
+- [x] Cost breakdown and pricing tool
+- [x] Suggested selling price calculator
+- [x] In-app notifications for alerts
+- [x] Dark mode toggle
+- [x] Date range filters for reports
+- [x] Form validation (frontend + backend)
 
 ## Phase 9: Testing & Delivery
-- [ ] Vitest unit tests
-- [ ] Integration testing
-- [ ] UI/UX polish and refinement
+- [x] Vitest unit tests (11 tests passing)
+- [x] Integration testing
+- [x] UI/UX polish and refinement
 - [ ] Final checkpoint and delivery
