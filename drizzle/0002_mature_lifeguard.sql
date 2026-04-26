@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `productionCost` decimal(10,2) DEFAULT '0';

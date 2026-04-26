@@ -283,9 +283,20 @@ export async function getTotalProfitByUserId(userId: number) {
   const db = await getDb();
   if (!db) return "0";
   
-  // Get total profit from sales
-  const salesResult = await db.select({ total: sum(sales.profit) }).from(sales).where(eq(sales.userId, userId));
-  const totalSalesProfit = parseFloat(salesResult[0]?.total?.toString() || "0");
+  // Get all sales and products for calculation
+  const allSales = await db.select().from(sales).where(eq(sales.userId, userId));
+  const allProducts = await db.select().from(products).where(eq(products.userId, userId));
+  
+  // Calculate profit from sales using product production costs
+  let totalSalesProfit = 0;
+  for (const sale of allSales) {
+    const product = allProducts.find(p => p.id === sale.productId);
+    if (product) {
+      const productionCost = parseFloat(product.productionCost?.toString() || "0");
+      const profit = sale.quantity * (parseFloat(sale.unitPrice.toString()) - productionCost);
+      totalSalesProfit += profit;
+    }
+  }
   
   // Get total expenses
   const expensesResult = await db.select({ total: sum(expenses.amount) }).from(expenses).where(eq(expenses.userId, userId));

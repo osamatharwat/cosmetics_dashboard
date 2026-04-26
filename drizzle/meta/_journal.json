@@ -15,6 +15,13 @@
       "when": 1777038415762,
       "tag": "0001_first_hobgoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1777108939644,
+      "tag": "0002_mature_lifeguard",
+      "breakpoints": true
     }
   ]
 }

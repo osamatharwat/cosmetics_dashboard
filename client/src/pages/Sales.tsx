@@ -106,6 +106,14 @@ export default function Sales() {
     ? (parseInt(formData.quantity) * parseFloat(formData.unitPrice)).toFixed(2)
     : "0.00";
 
+  const selectedProduct = products?.find(p => p.id === parseInt(formData.productId));
+  const profitPerUnit = selectedProduct 
+    ? (parseFloat(selectedProduct.sellingPrice.toString()) - parseFloat((selectedProduct.productionCost || "0").toString())).toFixed(2)
+    : "0.00";
+  const totalProfit = formData.quantity && selectedProduct
+    ? (parseInt(formData.quantity) * parseFloat(profitPerUnit)).toFixed(2)
+    : "0.00";
+
   const productBatches = formData.productId 
     ? batches?.filter(b => b.productId === parseInt(formData.productId)) || []
     : [];
@@ -191,9 +199,25 @@ export default function Sales() {
                 />
               </div>
 
-              <div className="bg-muted p-3 rounded-lg">
-                <p className="text-sm text-muted-foreground">Total Sale</p>
-                <p className="text-lg font-semibold">${totalPrice}</p>
+              <div className="space-y-2">
+                <div className="bg-muted p-3 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Total Sale</p>
+                  <p className="text-lg font-semibold">${totalPrice}</p>
+                </div>
+                {selectedProduct && (
+                  <div className="bg-green-950/30 border border-green-500/50 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Profit per Unit</p>
+                    <p className="text-lg font-semibold text-green-400">${profitPerUnit}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Selling: ${parseFloat(selectedProduct.sellingPrice.toString()).toFixed(2)} - Cost: ${parseFloat((selectedProduct.productionCost || "0").toString()).toFixed(2)}</p>
+                  </div>
+                )}
+                {formData.quantity && selectedProduct && (
+                  <div className="bg-blue-950/30 border border-blue-500/50 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Total Profit</p>
+                    <p className="text-lg font-semibold text-blue-400">${totalProfit}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{formData.quantity} units × ${profitPerUnit}</p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -247,6 +271,10 @@ export default function Sales() {
                 <TableBody>
                   {sales.map((sale) => {
                     const product = products?.find(p => p.id === sale.productId);
+                    const profit = product
+                      ? (sale.quantity * (parseFloat(product.sellingPrice.toString()) - parseFloat((product.productionCost || "0").toString()))).toFixed(2)
+                      : sale.profit.toString();
+                    const profitNum = parseFloat(profit);
                     return (
                       <TableRow key={sale.id}>
                         <TableCell>{new Date(sale.saleDate).toLocaleDateString()}</TableCell>
@@ -254,7 +282,7 @@ export default function Sales() {
                         <TableCell>{sale.quantity}</TableCell>
                         <TableCell>${parseFloat(sale.unitPrice.toString()).toFixed(2)}</TableCell>
                         <TableCell>${parseFloat(sale.totalPrice.toString()).toFixed(2)}</TableCell>
-                        <TableCell className="font-semibold text-green-600">${parseFloat(sale.profit.toString()).toFixed(2)}</TableCell>
+                        <TableCell className={`font-semibold ${profitNum >= 0 ? 'text-green-400' : 'text-red-400'}`}>${profit}</TableCell>
                         <TableCell>{sale.customerName || "-"}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">

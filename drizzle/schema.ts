@@ -30,6 +30,7 @@ export const products = mysqlTable("products", {
   name: varchar("name", { length: 255 }).notNull(),
   sku: varchar("sku", { length: 100 }).notNull().unique(),
   sellingPrice: decimal("sellingPrice", { precision: 10, scale: 2 }).notNull(),
+  productionCost: decimal("productionCost", { precision: 10, scale: 2 }).default("0"), // تكلفة الإنتاج للوحدة الواحدة
   description: text("description"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

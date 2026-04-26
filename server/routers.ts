@@ -9,7 +9,8 @@ import * as db from "./db";
 const productSchema = z.object({
   name: z.string().min(1, "Product name is required"),
   sku: z.string().min(1, "SKU is required"),
-  sellingPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, "Valid price required"),
+  sellingPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, "Valid selling price required"),
+  productionCost: z.string().regex(/^\d+(\.\d{1,2})?$/, "Valid production cost required"),
   description: z.string().optional(),
 });
 
