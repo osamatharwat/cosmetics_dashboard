@@ -95,7 +95,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
-              ${totalProfit.toFixed(2)}
+              ${parseFloat(analytics?.netProfit || "0").toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {profitMargin}% margin
