@@ -324,3 +324,211 @@ export async function getTotalOtherIncomeByUserId(userId: number) {
   const result = await db.select({ total: sum(otherIncome.amount) }).from(otherIncome).where(eq(otherIncome.userId, userId));
   return result[0]?.total?.toString() || "0";
 }
+
+
+// ============= REPORTING & ANALYTICS =============
+
+export interface MonthlyReport {
+  month: string;
+  year: number;
+  totalSales: number;
+  totalProfit: number;
+  totalExpenses: number;
+  otherIncome: number;
+  netProfit: number;
+  profitMargin: number;
+  salesCount: number;
+  expensesCount: number;
+}
+
+export interface YearlyReport {
+  year: number;
+  totalSales: number;
+  totalProfit: number;
+  totalExpenses: number;
+  otherIncome: number;
+  netProfit: number;
+  profitMargin: number;
+  monthlyBreakdown: MonthlyReport[];
+  bestMonth: MonthlyReport | null;
+  worstMonth: MonthlyReport | null;
+}
+
+export async function getMonthlyReport(userId: number, year: number, month: number): Promise<MonthlyReport> {
+  const db = await getDb();
+  if (!db) {
+    return {
+      month: new Date(year, month - 1).toLocaleString('en-US', { month: 'long' }),
+      year,
+      totalSales: 0,
+      totalProfit: 0,
+      totalExpenses: 0,
+      otherIncome: 0,
+      netProfit: 0,
+      profitMargin: 0,
+      salesCount: 0,
+      expensesCount: 0,
+    };
+  }
+
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0, 23, 59, 59);
+
+  // Get sales for the month
+  const allSales = await db.select().from(sales)
+    .where(eq(sales.userId, userId));
+  const allProducts = await db.select().from(products)
+    .where(eq(products.userId, userId));
+
+  const monthlySales = allSales.filter(s => {
+    const saleDate = new Date(s.saleDate);
+    return saleDate >= startDate && saleDate <= endDate;
+  });
+
+  let totalSalesAmount = 0;
+  let totalSalesProfit = 0;
+  for (const sale of monthlySales) {
+    const product = allProducts.find(p => p.id === sale.productId);
+    totalSalesAmount += parseFloat(sale.totalPrice.toString());
+    if (product) {
+      const productionCost = parseFloat(product.productionCost?.toString() || "0");
+      totalSalesProfit += sale.quantity * (parseFloat(sale.unitPrice.toString()) - productionCost);
+    }
+  }
+
+  // Get expenses for the month
+  const monthlyExpenses = await db.select().from(expenses)
+    .where(eq(expenses.userId, userId));
+  const filteredExpenses = monthlyExpenses.filter(e => {
+    const expenseDate = new Date(e.expenseDate);
+    return expenseDate >= startDate && expenseDate <= endDate;
+  });
+  const totalExpensesAmount = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount.toString()), 0);
+
+  // Get other income for the month
+  const monthlyIncome = await db.select().from(otherIncome)
+    .where(eq(otherIncome.userId, userId));
+  const filteredIncome = monthlyIncome.filter(i => {
+    const incomeDate = new Date(i.incomeDate);
+    return incomeDate >= startDate && incomeDate <= endDate;
+  });
+  const totalOtherIncomeAmount = filteredIncome.reduce((sum, i) => sum + parseFloat(i.amount.toString()), 0);
+
+  const netProfit = totalSalesProfit - totalExpensesAmount + totalOtherIncomeAmount;
+  const profitMargin = totalSalesAmount > 0 ? (netProfit / totalSalesAmount) * 100 : 0;
+
+  return {
+    month: new Date(year, month - 1).toLocaleString('en-US', { month: 'long' }),
+    year,
+    totalSales: totalSalesAmount,
+    totalProfit: totalSalesProfit,
+    totalExpenses: totalExpensesAmount,
+    otherIncome: totalOtherIncomeAmount,
+    netProfit,
+    profitMargin,
+    salesCount: monthlySales.length,
+    expensesCount: filteredExpenses.length,
+  };
+}
+
+export async function getYearlyReport(userId: number, year: number): Promise<YearlyReport> {
+  const monthlyReports: MonthlyReport[] = [];
+
+  for (let month = 1; month <= 12; month++) {
+    const report = await getMonthlyReport(userId, year, month);
+    monthlyReports.push(report);
+  }
+
+  const totalSales = monthlyReports.reduce((sum, m) => sum + m.totalSales, 0);
+  const totalProfit = monthlyReports.reduce((sum, m) => sum + m.totalProfit, 0);
+  const totalExpenses = monthlyReports.reduce((sum, m) => sum + m.totalExpenses, 0);
+  const totalOtherIncome = monthlyReports.reduce((sum, m) => sum + m.otherIncome, 0);
+  const netProfit = monthlyReports.reduce((sum, m) => sum + m.netProfit, 0);
+  const profitMargin = totalSales > 0 ? (netProfit / totalSales) * 100 : 0;
+
+  // Find best and worst months
+  const validMonths = monthlyReports.filter(m => m.netProfit !== 0);
+  const bestMonth = validMonths.length > 0 ? validMonths.reduce((best, m) => m.netProfit > best.netProfit ? m : best) : null;
+  const worstMonth = validMonths.length > 0 ? validMonths.reduce((worst, m) => m.netProfit < worst.netProfit ? m : worst) : null;
+
+  return {
+    year,
+    totalSales,
+    totalProfit,
+    totalExpenses,
+    otherIncome: totalOtherIncome,
+    netProfit,
+    profitMargin,
+    monthlyBreakdown: monthlyReports,
+    bestMonth,
+    worstMonth,
+  };
+}
+
+export async function getProductProfitability(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const allProducts = await db.select().from(products).where(eq(products.userId, userId));
+  const allSales = await db.select().from(sales).where(eq(sales.userId, userId));
+
+  const profitability = allProducts.map(product => {
+    const productSales = allSales.filter(s => s.productId === product.id);
+    const totalQuantity = productSales.reduce((sum, s) => sum + s.quantity, 0);
+    const totalRevenue = productSales.reduce((sum, s) => sum + parseFloat(s.totalPrice.toString()), 0);
+    
+    const productionCost = parseFloat(product.productionCost?.toString() || "0");
+    const totalCost = totalQuantity * productionCost;
+    const totalProfit = totalRevenue - totalCost;
+    const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+    return {
+      productId: product.id,
+      productName: product.name,
+      sku: product.sku,
+      sellingPrice: parseFloat(product.sellingPrice.toString()),
+      productionCost,
+      profitPerUnit: parseFloat(product.sellingPrice.toString()) - productionCost,
+      totalQuantitySold: totalQuantity,
+      totalRevenue,
+      totalCost,
+      totalProfit,
+      profitMargin,
+    };
+  });
+
+  return profitability.sort((a, b) => b.totalProfit - a.totalProfit);
+}
+
+export async function getExpenseBreakdown(userId: number, year?: number, month?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let expenseList = await db.select().from(expenses).where(eq(expenses.userId, userId));
+
+  if (year !== undefined && month !== undefined) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+    expenseList = expenseList.filter(e => {
+      const expenseDate = new Date(e.expenseDate);
+      return expenseDate >= startDate && expenseDate <= endDate;
+    });
+  } else if (year !== undefined) {
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59);
+    expenseList = expenseList.filter(e => {
+      const expenseDate = new Date(e.expenseDate);
+      return expenseDate >= startDate && expenseDate <= endDate;
+    });
+  }
+
+  const breakdown: Record<string, number> = {};
+  expenseList.forEach(expense => {
+    const category = expense.category;
+    breakdown[category] = (breakdown[category] || 0) + parseFloat(expense.amount.toString());
+  });
+
+  return Object.entries(breakdown)
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount);
+}

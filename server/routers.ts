@@ -547,7 +547,31 @@ export const appRouter = router({
           netProfit: netProfit.toFixed(2),
         };
       }),
+   }),
+
+  // ============= REPORTING & ANALYTICS =============
+  reports: router({
+    monthlyReport: protectedProcedure
+      .input(z.object({ year: z.number().int(), month: z.number().int().min(1).max(12) }))
+      .query(async ({ ctx, input }) => {
+        return db.getMonthlyReport(ctx.user.id, input.year, input.month);
+      }),
+
+    yearlyReport: protectedProcedure
+      .input(z.object({ year: z.number().int() }))
+      .query(async ({ ctx, input }) => {
+        return db.getYearlyReport(ctx.user.id, input.year);
+      }),
+
+    productProfitability: protectedProcedure.query(async ({ ctx }) => {
+      return db.getProductProfitability(ctx.user.id);
+    }),
+
+    expenseBreakdown: protectedProcedure
+      .input(z.object({ year: z.number().int().optional(), month: z.number().int().min(1).max(12).optional() }))
+      .query(async ({ ctx, input }) => {
+        return db.getExpenseBreakdown(ctx.user.id, input.year, input.month);
+      }),
   }),
 });
-
 export type AppRouter = typeof appRouter;
