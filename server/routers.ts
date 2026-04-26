@@ -379,6 +379,7 @@ export const appRouter = router({
     dashboard: protectedProcedure.query(async ({ ctx }) => {
       const totalSales = await db.getTotalSalesByUserId(ctx.user.id);
       const totalProfit = await db.getTotalProfitByUserId(ctx.user.id);
+      const netProfit = await db.getNetProfitByUserId(ctx.user.id);
       const totalExpenses = await db.getTotalExpensesByUserId(ctx.user.id);
       const totalOtherIncome = await db.getTotalOtherIncomeByUserId(ctx.user.id);
 
@@ -425,15 +426,15 @@ export const appRouter = router({
       });
 
       return {
-        totalSales,
-        totalProfit,
-        totalExpenses,
-        totalOtherIncome,
-        inventoryValue,
-        bestSellers,
-        lowStockAlerts,
-        expiringBatches,
-      };
+  totalSales,
+  totalProfit,
+  totalExpenses,
+  netProfit,
+  inventoryValue,
+  bestSellers,
+  lowStockAlerts,
+  expiringBatches,
+};
     }),
 
     salesOverTime: protectedProcedure
