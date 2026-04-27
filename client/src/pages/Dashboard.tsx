@@ -17,15 +17,15 @@ export default function Dashboard() {
   }
 
   const totalSales = parseFloat(analytics?.totalSales || "0");
-  const totalProfit = parseFloat(analytics?.totalProfit || "0");
+  const grossProfit = parseFloat(analytics?.totalProfit || "0"); // Gross Profit = Revenue - COGS
   const totalExpenses = parseFloat(analytics?.totalExpenses || "0");
   const totalOtherIncome = parseFloat(analytics?.totalOtherIncome || "0");
+  const netProfit = parseFloat(analytics?.netProfit || "0"); // Net Profit = Gross Profit - Expenses + Other Income
   const inventoryValue = parseFloat(analytics?.inventoryValue || "0");
 
-  // Calculate profit from sales (before expenses)
-  const profitFromSales = totalSales > 0 ? totalSales - totalExpenses + totalOtherIncome : 0;
-  const profitMargin = totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : "0";
-  const isProfit = totalProfit >= 0;
+  // Calculate profit margin based on Net Profit
+  const profitMargin = totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) : "0";
+  const isProfit = netProfit >= 0;
 
   const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b'];
 
@@ -50,8 +50,8 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span>Total Sales Revenue:</span>
-              <span className="font-mono">${totalSales.toFixed(2)}</span>
+              <span>Gross Profit (Revenue - COGS):</span>
+              <span className="font-mono">${grossProfit.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>− Total Expenses:</span>
@@ -64,7 +64,7 @@ export default function Dashboard() {
             <div className="border-t pt-2 flex justify-between font-bold">
               <span>= Net Profit:</span>
               <span className={`font-mono ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
-                ${totalProfit.toFixed(2)}
+                ${netProfit.toFixed(2)}
               </span>
             </div>
           </CardContent>

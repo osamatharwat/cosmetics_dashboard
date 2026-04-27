@@ -429,6 +429,7 @@ export const appRouter = router({
   totalSales,
   totalProfit,
   totalExpenses,
+  totalOtherIncome,
   netProfit,
   inventoryValue,
   bestSellers,

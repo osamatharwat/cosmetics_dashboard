@@ -279,20 +279,28 @@ export async function getTotalSalesByUserId(userId: number) {
   return result[0]?.total?.toString() || "0";
 }
 
-export async function getTotalProfitByUserId(userId: number) {
+// Gross Profit = Revenue - COGS (Cost of Goods Sold)
+export async function getGrossProfitByUserId(userId: number) {
   const db = await getDb();
   if (!db) return "0";
   const result = await db.select({ total: sum(sales.profit) }).from(sales).where(eq(sales.userId, userId));
   return result[0]?.total?.toString() || "0";
 }
 
+// Keep for backward compatibility
+export async function getTotalProfitByUserId(userId: number) {
+  return getGrossProfitByUserId(userId);
+}
+
+// Net Profit = Gross Profit - Expenses + Other Income
 export async function getNetProfitByUserId(userId: number) {
   const toNum = (v: any) => Number.parseFloat(String(v ?? 0)) || 0;
-  const grossProfit = await getTotalProfitByUserId(userId);
+  const grossProfit = await getGrossProfitByUserId(userId);
   const totalExpenses = await getTotalExpensesByUserId(userId);
   const otherIncome = await getTotalOtherIncomeByUserId(userId);
 
-  return (toNum(grossProfit) + toNum(otherIncome) - toNum(totalExpenses)).toFixed(2);
+  // Net Profit = Gross Profit - Expenses + Other Income
+  return (toNum(grossProfit) - toNum(totalExpenses) + toNum(otherIncome)).toFixed(2);
 }
 
 export async function getTotalExpensesByUserId(userId: number) {
@@ -515,4 +523,106 @@ export async function getExpenseBreakdown(userId: number, year?: number, month?:
   return Object.entries(breakdown)
     .map(([category, amount]) => ({ category, amount }))
     .sort((a, b) => b.amount - a.amount);
+}
+
+// ============= ATOMIC SALES TRANSACTIONS =============
+// These functions ensure data consistency and prevent negative stock
+
+export async function createSaleAtomic(data: { userId: number; productId: number; batchId?: number; quantity: number; unitPrice: string; totalPrice: string; costPerUnit: string; profit: string; customerName?: string; saleDate: Date }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Validate stock availability if batch is specified
+    if (data.batchId) {
+      const batch = await db.select().from(batches).where(eq(batches.id, data.batchId)).limit(1);
+      if (batch.length === 0) throw new Error("Batch not found");
+      if (batch[0].remainingStock < data.quantity) {
+        throw new Error(`Insufficient stock. Available: ${batch[0].remainingStock}, Requested: ${data.quantity}`);
+      }
+    }
+
+    // Create the sale
+    const result = await db.insert(sales).values(data);
+
+    // Update batch remaining stock if batch is specified
+    if (data.batchId) {
+      const batch = await db.select().from(batches).where(eq(batches.id, data.batchId)).limit(1);
+      if (batch.length > 0) {
+        const newRemainingStock = batch[0].remainingStock - data.quantity;
+        await db.update(batches)
+          .set({ remainingStock: newRemainingStock })
+          .where(eq(batches.id, data.batchId));
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error("[Database] Error creating sale:", error);
+    throw error;
+  }
+}
+
+export async function updateSaleAtomic(id: number, userId: number, oldBatchId: number | undefined, newBatchId: number | undefined, oldQuantity: number, newQuantity: number, data: Partial<Omit<Sale, 'id' | 'userId' | 'createdAt'>>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // If batch changed or quantity changed, update batch stock
+    if (oldBatchId !== newBatchId || oldQuantity !== newQuantity) {
+      // Restore old batch stock
+      if (oldBatchId) {
+        const oldBatch = await db.select().from(batches).where(eq(batches.id, oldBatchId)).limit(1);
+        if (oldBatch.length > 0) {
+          await db.update(batches)
+            .set({ remainingStock: oldBatch[0].remainingStock + oldQuantity })
+            .where(eq(batches.id, oldBatchId));
+        }
+      }
+
+      // Deduct from new batch
+      if (newBatchId) {
+        const newBatch = await db.select().from(batches).where(eq(batches.id, newBatchId)).limit(1);
+        if (newBatch.length === 0) throw new Error("New batch not found");
+        if (newBatch[0].remainingStock < newQuantity) {
+          throw new Error(`Insufficient stock in new batch. Available: ${newBatch[0].remainingStock}, Requested: ${newQuantity}`);
+        }
+        await db.update(batches)
+          .set({ remainingStock: newBatch[0].remainingStock - newQuantity })
+          .where(eq(batches.id, newBatchId));
+      }
+    }
+
+    return db.update(sales).set(data).where(and(eq(sales.id, id), eq(sales.userId, userId)));
+  } catch (error) {
+    console.error("[Database] Error updating sale:", error);
+    throw error;
+  }
+}
+
+export async function deleteSaleAtomic(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Get the sale to retrieve batch and quantity info
+    const sale = await db.select().from(sales).where(and(eq(sales.id, id), eq(sales.userId, userId))).limit(1);
+    if (sale.length === 0) throw new Error("Sale not found");
+
+    // Restore batch stock
+    if (sale[0].batchId) {
+      const batch = await db.select().from(batches).where(eq(batches.id, sale[0].batchId)).limit(1);
+      if (batch.length > 0) {
+        await db.update(batches)
+          .set({ remainingStock: batch[0].remainingStock + sale[0].quantity })
+          .where(eq(batches.id, sale[0].batchId));
+      }
+    }
+
+    // Delete the sale
+    return db.delete(sales).where(and(eq(sales.id, id), eq(sales.userId, userId)));
+  } catch (error) {
+    console.error("[Database] Error deleting sale:", error);
+    throw error;
+  }
 }
