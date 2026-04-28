@@ -72,8 +72,8 @@ export const sales = mysqlTable("sales", {
   quantity: int("quantity").notNull(),
   unitPrice: decimal("unitPrice", { precision: 10, scale: 2 }).notNull(),
   totalPrice: decimal("totalPrice", { precision: 12, scale: 2 }).notNull(),
-  costPerUnit: decimal("costPerUnit", { precision: 10, scale: 2 }).notNull(), // from batch
-  profit: decimal("profit", { precision: 12, scale: 2 }).notNull(), // auto-calculated
+  costPerUnit: decimal("costPerUnit", { precision: 10, scale: 2 }).notNull(),
+  profit: decimal("profit", { precision: 12, scale: 2 }).notNull(),
   customerName: varchar("customerName", { length: 255 }),
   saleDate: timestamp("saleDate").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

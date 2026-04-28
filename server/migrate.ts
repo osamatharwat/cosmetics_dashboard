@@ -9,21 +9,43 @@ export async function runMigration() {
   }
 
   try {
-    console.log("Running migration: Adding productionCost column...");
+    console.log("Running migrations...");
     
-    // Try to add the column
-    await db.execute(
-      sql.raw(`ALTER TABLE \`products\` ADD \`productionCost\` decimal(10,2) DEFAULT '0'`)
-    );
+    // Migration 1: Add productionCost to products
+    try {
+      await db.execute(
+        sql.raw(`ALTER TABLE \`products\` ADD \`productionCost\` decimal(10,2) DEFAULT '0'`)
+      );
+      console.log("✓ Added productionCost column");
+    } catch (e: any) {
+      if (!e?.message?.includes("Duplicate")) throw e;
+      console.log("✓ productionCost column already exists");
+    }
+
+    // Migration 2: Add discount fields to sales
+    try {
+      await db.execute(
+        sql.raw(`ALTER TABLE \`sales\` ADD \`discountType\` enum('none','percentage','fixed') DEFAULT 'none' NOT NULL`)
+      );
+      console.log("✓ Added discountType column");
+    } catch (e: any) {
+      if (!e?.message?.includes("Duplicate")) throw e;
+      console.log("✓ discountType column already exists");
+    }
+
+    try {
+      await db.execute(
+        sql.raw(`ALTER TABLE \`sales\` ADD \`discountValue\` decimal(10,2) DEFAULT '0' NOT NULL`)
+      );
+      console.log("✓ Added discountValue column");
+    } catch (e: any) {
+      if (!e?.message?.includes("Duplicate")) throw e;
+      console.log("✓ discountValue column already exists");
+    }
     
-    console.log("✓ Migration successful");
+    console.log("✓ All migrations successful");
     return true;
   } catch (error: any) {
-    // Check if column already exists
-    if (error?.message?.includes("Duplicate column")) {
-      console.log("✓ Column already exists");
-      return true;
-    }
     console.error("Migration error:", error?.message || error);
     return false;
   }

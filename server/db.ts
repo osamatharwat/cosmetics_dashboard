@@ -182,10 +182,15 @@ export async function getSaleById(id: number, userId: number) {
   return result[0];
 }
 
-export async function createSale(data: { userId: number; productId: number; batchId?: number; quantity: number; unitPrice: string; totalPrice: string; costPerUnit: string; profit: string; customerName?: string; saleDate: Date }) {
+export async function createSale(data: { userId: number; productId: number; batchId?: number; quantity: number; unitPrice: string; discountType?: "none" | "percentage" | "fixed"; discountValue?: string; totalPrice: string; costPerUnit: string; profit: string; customerName?: string; saleDate: Date }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(sales).values(data);
+  const saleData = {
+    ...data,
+    discountType: (data.discountType || "none") as "none" | "percentage" | "fixed",
+    discountValue: data.discountValue || "0",
+  };
+  const result = await db.insert(sales).values(saleData);
   return result;
 }
 

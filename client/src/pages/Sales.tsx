@@ -19,6 +19,8 @@ export default function Sales() {
     batchId: "",
     quantity: "",
     unitPrice: "",
+    discountType: "none",
+    discountValue: "",
     customerName: "",
     saleDate: new Date().toISOString().split('T')[0],
   });
@@ -67,6 +69,8 @@ export default function Sales() {
         batchId: "",
         quantity: "",
         unitPrice: "",
+        discountType: "none",
+        discountValue: "",
         customerName: "",
         saleDate: new Date().toISOString().split('T')[0],
       });
@@ -96,15 +100,27 @@ export default function Sales() {
       batchId: sale.batchId ? sale.batchId.toString() : "",
       quantity: sale.quantity.toString(),
       unitPrice: sale.unitPrice.toString(),
+      discountType: sale.discountType || "none",
+      discountValue: sale.discountValue?.toString() || "",
       customerName: sale.customerName || "",
       saleDate: new Date(sale.saleDate).toISOString().split('T')[0],
     });
     setIsOpen(true);
   };
 
-  const totalPrice = formData.quantity && formData.unitPrice 
-    ? (parseInt(formData.quantity) * parseFloat(formData.unitPrice)).toFixed(2)
-    : "0.00";
+  const subtotal = formData.quantity && formData.unitPrice 
+    ? parseInt(formData.quantity) * parseFloat(formData.unitPrice)
+    : 0;
+  
+  let discountAmount = 0;
+  if (formData.discountType === "percentage" && formData.discountValue) {
+    discountAmount = (subtotal * parseFloat(formData.discountValue)) / 100;
+  } else if (formData.discountType === "fixed" && formData.discountValue) {
+    discountAmount = parseFloat(formData.discountValue);
+  }
+  
+  const totalPrice = (subtotal - discountAmount).toFixed(2);
+  const discountDisplay = discountAmount > 0 ? `-$${discountAmount.toFixed(2)}` : "No discount";
 
   const selectedProduct = products?.find(p => p.id === parseInt(formData.productId));
   const profitPerUnit = selectedProduct 
@@ -134,6 +150,8 @@ export default function Sales() {
                 batchId: "",
                 quantity: "",
                 unitPrice: "",
+                discountType: "none",
+                discountValue: "",
                 customerName: "",
                 saleDate: new Date().toISOString().split('T')[0],
               });
@@ -200,9 +218,40 @@ export default function Sales() {
               </div>
 
               <div className="space-y-2">
+                <Label>Discount Type</Label>
+                <Select value={formData.discountType} onValueChange={(value) => setFormData({ ...formData, discountType: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Discount</SelectItem>
+                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.discountType !== "none" && (
+                <div className="space-y-2">
+                  <Label>{formData.discountType === "percentage" ? "Discount (%)" : "Discount ($)"}</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.discountValue}
+                    onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
+                    placeholder={formData.discountType === "percentage" ? "e.g., 10" : "e.g., 5.00"}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
                 <div className="bg-muted p-3 rounded-lg">
                   <p className="text-sm text-muted-foreground">Total Sale</p>
                   <p className="text-lg font-semibold">${totalPrice}</p>
+                  {discountAmount > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">Subtotal: ${subtotal.toFixed(2)} {discountDisplay}</p>
+                  )}
                 </div>
                 {selectedProduct && (
                   <div className="bg-green-950/30 border border-green-500/50 p-3 rounded-lg">
