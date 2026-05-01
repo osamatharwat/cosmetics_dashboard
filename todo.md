@@ -62,3 +62,40 @@
 - [x] Integration testing
 - [x] UI/UX polish and refinement
 - [x] Final checkpoint and delivery
+
+
+## Phase 10: Professional Accounting System Overhaul
+
+### Accounting Architecture
+- [ ] Implement double-entry bookkeeping principles
+- [ ] Create journal entries table for all transactions
+- [ ] Add account chart (Assets, Liabilities, Equity, Revenue, Expenses)
+- [ ] Implement account reconciliation
+
+### Cost Tracking & COGS
+- [ ] Add material cost tracking per batch
+- [ ] Implement labor cost allocation
+- [ ] Add overhead cost distribution
+- [ ] Calculate accurate COGS per product
+- [ ] Track inventory valuation (FIFO/LIFO/Weighted Average)
+
+### Automated Financial Relationships
+- [ ] Discount impact on profit (automatic recalculation)
+- [ ] Batch stock updates trigger inventory value changes
+- [ ] Sales transactions auto-update COGS
+- [ ] Expense categorization auto-updates financial statements
+- [ ] Revenue recognition automation
+
+### Financial Reports
+- [ ] Income Statement (P&L) with proper structure
+- [ ] Balance Sheet
+- [ ] Cash Flow Statement
+- [ ] Trial Balance
+- [ ] General Ledger by account
+- [ ] Profit & Loss by product/batch/customer
+
+### Data Integrity & Validation
+- [ ] Prevent negative inventory
+- [ ] Validate all transactions balance
+- [ ] Audit trail for all changes
+- [ ] Transaction locking after period close

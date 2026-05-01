@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, sum } from "drizzle-orm";
+import { eq, and, desc, gte, lte, sum, count, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, products, batches, sales, expenses, otherIncome, costBreakdowns, Product, Batch, Sale, Expense, OtherIncome, CostBreakdown } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -631,3 +631,6 @@ export async function deleteSaleAtomic(id: number, userId: number) {
     throw error;
   }
 }
+
+
+// ============================================================================

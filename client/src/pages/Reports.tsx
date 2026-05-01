@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Download, TrendingUp, TrendingDown } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, DollarSign, Percent } from "lucide-react";
 
 export default function Reports() {
   const currentYear = new Date().getFullYear();
@@ -49,7 +49,7 @@ export default function Reports() {
     if (!data || data.length === 0) return;
     const csv = [
       Object.keys(data[0]).join(","),
-      ...data.map((row) => Object.values(row).map((v) => JSON.stringify(v)).join(",")),
+      ...data.map(row => Object.values(row).join(",")),
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -57,441 +57,331 @@ export default function Reports() {
     a.href = url;
     a.download = filename;
     a.click();
-    window.URL.revokeObjectURL(url);
   };
 
-  const monthlyChartData = yearlyReport?.monthlyBreakdown.map((m) => ({
-    month: m.month.slice(0, 3),
-    revenue: m.totalSales,
-    profit: m.netProfit,
-    expenses: m.totalExpenses,
-  })) || [];
-
-  const pieColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
+  const formatCurrency = (value: any) => {
+    const num = parseFloat(value || 0);
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(num);
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Business Reports & Analytics</h1>
-        <p className="text-muted-foreground mt-1">Track your business performance with detailed monthly and yearly reports</p>
+        <h1 className="text-3xl font-bold tracking-tight">Financial Reports</h1>
+        <p className="text-muted-foreground mt-2">Professional accounting reports and analytics</p>
       </div>
 
-      <Tabs defaultValue="monthly" className="w-full">
+      <Tabs defaultValue="income-statement" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="monthly">Monthly</TabsTrigger>
-          <TabsTrigger value="yearly">Yearly</TabsTrigger>
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="expenses">Expenses</TabsTrigger>
+          <TabsTrigger value="income-statement">Income Statement</TabsTrigger>
+          <TabsTrigger value="monthly">Monthly Analysis</TabsTrigger>
+          <TabsTrigger value="products">Product Analysis</TabsTrigger>
+          <TabsTrigger value="expenses">Expense Breakdown</TabsTrigger>
         </TabsList>
 
-        {/* MONTHLY REPORT */}
-        <TabsContent value="monthly" className="space-y-6">
-          <div className="flex gap-4">
-            <div className="flex-1 max-w-xs">
-              <label className="text-sm font-medium">Select Month</label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>
-                      {m.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1 max-w-xs">
-              <label className="text-sm font-medium">Select Year</label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y} value={y.toString()}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {monthlyLoading ? (
-            <Card><CardContent className="pt-6">Loading...</CardContent></Card>
-          ) : monthlyReport ? (
-            <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Sales</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">${monthlyReport.totalSales.toFixed(2)}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-red-500">${monthlyReport.totalExpenses.toFixed(2)}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Other Income</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-500">${monthlyReport.otherIncome.toFixed(2)}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Net Profit</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className={`text-2xl font-bold ${monthlyReport.netProfit >= 0 ? "text-green-500" : "text-red-500"}`}>
-                      ${monthlyReport.netProfit.toFixed(2)}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{monthlyReport.profitMargin.toFixed(1)}% margin</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Monthly Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Sales Transactions:</span>
-                      <span className="font-medium">{monthlyReport.salesCount}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Expense Entries:</span>
-                      <span className="font-medium">{monthlyReport.expensesCount}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Profit from Sales:</span>
-                      <span className="font-medium text-green-500">${monthlyReport.totalProfit.toFixed(2)}</span>
+        {/* INCOME STATEMENT TAB */}
+        <TabsContent value="income-statement" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Income Statement - {selectedYear}</CardTitle>
+              <CardDescription>Professional accounting report showing revenue, expenses, and net profit</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {yearlyReport ? (
+                <div className="space-y-4">
+                  {/* Revenue Section */}
+                  <div className="border-b pb-4">
+                    <h3 className="font-semibold text-lg mb-3">Revenue</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Total Sales Revenue</span>
+                        <span className="font-semibold">{formatCurrency(yearlyReport.totalSales)}</span>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </>
-          ) : null}
-        </TabsContent>
 
-        {/* YEARLY REPORT */}
-        <TabsContent value="yearly" className="space-y-6">
-          <div className="flex-1 max-w-xs">
-            <label className="text-sm font-medium">Select Year</label>
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y} value={y.toString()}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {yearlyLoading ? (
-            <Card><CardContent className="pt-6">Loading...</CardContent></Card>
-          ) : yearlyReport ? (
-            <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Annual Revenue</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">${yearlyReport.totalSales.toFixed(2)}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-red-500">${yearlyReport.totalExpenses.toFixed(2)}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Annual Profit</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className={`text-2xl font-bold ${yearlyReport.netProfit >= 0 ? "text-green-500" : "text-red-500"}`}>
-                      ${yearlyReport.netProfit.toFixed(2)}
+                  {/* COGS Section */}
+                  <div className="border-b pb-4">
+                    <h3 className="font-semibold text-lg mb-3">Cost of Goods Sold</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Production Costs</span>
+                        <span className="font-semibold">{formatCurrency((parseFloat(yearlyReport.totalSales.toString()) - parseFloat(yearlyReport.totalProfit.toString())))}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t">
+                        <span className="font-semibold">Gross Profit</span>
+                        <span className="font-bold text-green-600">{formatCurrency(yearlyReport.totalProfit)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Gross Margin</span>
+                        <span className="text-sm">{(yearlyReport.profitMargin).toFixed(2)}%</span>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{yearlyReport.profitMargin.toFixed(1)}% margin</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Other Income</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-500">${yearlyReport.otherIncome.toFixed(2)}</div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
 
-              {yearlyReport.bestMonth && yearlyReport.worstMonth && (
-                <div className="grid grid-cols-2 gap-4">
-                  <Card className="border-green-500/50 bg-green-950/20">
-                    <CardHeader>
-                      <CardTitle className="text-green-400 flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4" />
-                        Best Month
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="font-semibold">{yearlyReport.bestMonth.month}</p>
-                      <p className="text-sm text-muted-foreground">Profit: ${yearlyReport.bestMonth.netProfit.toFixed(2)}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-red-500/50 bg-red-950/20">
-                    <CardHeader>
-                      <CardTitle className="text-red-400 flex items-center gap-2">
-                        <TrendingDown className="w-4 h-4" />
-                        Worst Month
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="font-semibold">{yearlyReport.worstMonth.month}</p>
-                      <p className="text-sm text-muted-foreground">Profit: ${yearlyReport.worstMonth.netProfit.toFixed(2)}</p>
-                    </CardContent>
-                  </Card>
+                  {/* Operating Expenses Section */}
+                  <div className="border-b pb-4">
+                    <h3 className="font-semibold text-lg mb-3">Operating Expenses</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Total Expenses</span>
+                        <span className="font-semibold">{formatCurrency(yearlyReport.totalExpenses)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Other Income Section */}
+                  <div className="border-b pb-4">
+                    <h3 className="font-semibold text-lg mb-3">Other Income</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Other Income</span>
+                        <span className="font-semibold text-green-600">{formatCurrency(yearlyReport.otherIncome)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Net Profit Section */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 p-4 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-lg">Net Profit</span>
+                      <span className={`font-bold text-xl ${parseFloat(yearlyReport.netProfit.toString()) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        {formatCurrency(yearlyReport.netProfit)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-sm text-muted-foreground">Net Profit Margin</span>
+                      <span className={`text-sm font-semibold ${parseFloat(yearlyReport.profitMargin.toString()) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        {(yearlyReport.profitMargin).toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button onClick={() => downloadCSV([yearlyReport], `income-statement-${selectedYear}.csv`)}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Report
+                  </Button>
                 </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">No data available</div>
               )}
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Monthly Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={monthlyChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `$${typeof value === "number" ? value.toFixed(2) : value}`} />
-                      <Legend />
-                      <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} name="Revenue" />
-                      <Line type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={2} name="Net Profit" />
-                      <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} name="Expenses" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Monthly Summary Table</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Month</TableHead>
-                          <TableHead>Revenue</TableHead>
-                          <TableHead>Expenses</TableHead>
-                          <TableHead>Profit</TableHead>
-                          <TableHead>Margin %</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {yearlyReport.monthlyBreakdown.map((m) => (
-                          <TableRow key={m.month}>
-                            <TableCell className="font-medium">{m.month}</TableCell>
-                            <TableCell>${m.totalSales.toFixed(2)}</TableCell>
-                            <TableCell>${m.totalExpenses.toFixed(2)}</TableCell>
-                            <TableCell className={m.netProfit >= 0 ? "text-green-500 font-medium" : "text-red-500 font-medium"}>
-                              ${m.netProfit.toFixed(2)}
-                            </TableCell>
-                            <TableCell>{m.profitMargin.toFixed(1)}%</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          ) : null}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* PRODUCT ANALYSIS */}
-        <TabsContent value="products" className="space-y-6">
-          {productProfitability && productProfitability.length > 0 ? (
-            <>
-              <div className="flex justify-end">
-                <Button
-                  onClick={() =>
-                    downloadCSV(
-                      productProfitability.map((p) => ({
-                        Product: p.productName,
-                        SKU: p.sku,
-                        "Production Cost": p.productionCost.toFixed(2),
-                        "Selling Price": p.sellingPrice.toFixed(2),
-                        "Profit/Unit": p.profitPerUnit.toFixed(2),
-                        "Units Sold": p.totalQuantitySold,
-                        "Total Revenue": p.totalRevenue.toFixed(2),
-                        "Total Profit": p.totalProfit.toFixed(2),
-                        "Margin %": p.profitMargin.toFixed(1),
-                      })),
-                      "product-profitability.csv"
-                    )
-                  }
-                  variant="outline"
-                  size="sm"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export CSV
-                </Button>
+        {/* MONTHLY ANALYSIS TAB */}
+        <TabsContent value="monthly" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Financial Analysis</CardTitle>
+              <CardDescription>Detailed breakdown of monthly revenue, expenses, and profit</CardDescription>
+              <div className="flex gap-4 mt-4">
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map(year => (
+                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map(month => (
+                      <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {monthlyReport ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground mb-1">Monthly Revenue</p>
+                          <p className="text-2xl font-bold text-blue-600">{formatCurrency(monthlyReport.totalSales)}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground mb-1">Gross Profit</p>
+                          <p className="text-2xl font-bold text-green-600">{formatCurrency(monthlyReport.totalProfit)}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground mb-1">Expenses</p>
+                          <p className="text-2xl font-bold text-orange-600">{formatCurrency(monthlyReport.totalExpenses)}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground mb-1">Net Profit</p>
+                          <p className={`text-2xl font-bold ${parseFloat(monthlyReport.netProfit.toString()) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                            {formatCurrency(monthlyReport.netProfit)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Product Profitability Analysis</CardTitle>
-                  <CardDescription>Ranked by total profit contribution</CardDescription>
-                </CardHeader>
-                <CardContent>
+                  <div className="pt-4">
+                    <h3 className="font-semibold mb-4">Monthly Trend</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={[monthlyReport]}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => formatCurrency(value)} />
+                        <Legend />
+                        <Line type="monotone" dataKey="totalSales" stroke="#3b82f6" name="Revenue" />
+                        <Line type="monotone" dataKey="totalProfit" stroke="#10b981" name="Gross Profit" />
+                        <Line type="monotone" dataKey="totalExpenses" stroke="#f97316" name="Expenses" />
+                        <Line type="monotone" dataKey="netProfit" stroke="#8b5cf6" name="Net Profit" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">No data available for selected month</div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* PRODUCT ANALYSIS TAB */}
+        <TabsContent value="products" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Product Profitability Analysis</CardTitle>
+              <CardDescription>Detailed breakdown of profit by product</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {productProfitability && productProfitability.length > 0 ? (
+                <>
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Product</TableHead>
                           <TableHead>SKU</TableHead>
-                          <TableHead>Cost</TableHead>
-                          <TableHead>Price</TableHead>
-                          <TableHead>Profit/Unit</TableHead>
-                          <TableHead>Units Sold</TableHead>
-                          <TableHead>Total Profit</TableHead>
-                          <TableHead>Margin %</TableHead>
+                          <TableHead className="text-right">Sales Count</TableHead>
+                          <TableHead className="text-right">Units Sold</TableHead>
+                          <TableHead className="text-right">Revenue</TableHead>
+                          <TableHead className="text-right">Profit</TableHead>
+                          <TableHead className="text-right">Margin %</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {productProfitability.map((p) => (
-                          <TableRow key={p.productId}>
-                            <TableCell className="font-medium">{p.productName}</TableCell>
-                            <TableCell>{p.sku}</TableCell>
-                            <TableCell>${p.productionCost.toFixed(2)}</TableCell>
-                            <TableCell>${p.sellingPrice.toFixed(2)}</TableCell>
-                            <TableCell className="text-green-500">${p.profitPerUnit.toFixed(2)}</TableCell>
-                            <TableCell>{p.totalQuantitySold}</TableCell>
-                            <TableCell className={p.totalProfit >= 0 ? "text-green-500 font-medium" : "text-red-500 font-medium"}>
-                              ${p.totalProfit.toFixed(2)}
+                        {productProfitability.map((product: any) => (
+                          <TableRow key={product.id}>
+                            <TableCell className="font-medium">{product.name}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{product.sku}</TableCell>
+                            <TableCell className="text-right">{product.salesCount || 0}</TableCell>
+                            <TableCell className="text-right">{product.totalQuantitySold || 0}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(product.totalRevenue || 0)}</TableCell>
+                            <TableCell className={`text-right font-semibold ${parseFloat(product.totalProfit || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {formatCurrency(product.totalProfit || 0)}
                             </TableCell>
-                            <TableCell>{p.profitMargin.toFixed(1)}%</TableCell>
+                            <TableCell className={`text-right font-semibold ${parseFloat(product.profitMarginPercent || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {product.profitMarginPercent || 0}%
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Top Products by Profit</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={productProfitability.slice(0, 10)}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="productName" angle={-45} textAnchor="end" height={100} />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `$${typeof value === "number" ? value.toFixed(2) : value}`} />
-                      <Bar dataKey="totalProfit" fill="#10b981" name="Total Profit" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </>
-          ) : (
-            <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">No product data available yet</CardContent>
-            </Card>
-          )}
+                  <Button onClick={() => downloadCSV(productProfitability, "product-profitability.csv")}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Report
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">No product data available</div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* EXPENSE BREAKDOWN */}
-        <TabsContent value="expenses" className="space-y-6">
-          {expenseBreakdown && expenseBreakdown.length > 0 ? (
-            <>
-              <div className="flex justify-end">
-                <Button
-                  onClick={() =>
-                    downloadCSV(
-                      expenseBreakdown.map((e) => ({
-                        Category: e.category,
-                        Amount: e.amount.toFixed(2),
-                      })),
-                      "expense-breakdown.csv"
-                    )
-                  }
-                  variant="outline"
-                  size="sm"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export CSV
-                </Button>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Expense Breakdown for {selectedYear}</CardTitle>
-                </CardHeader>
-                <CardContent>
+        {/* EXPENSE BREAKDOWN TAB */}
+        <TabsContent value="expenses" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Expense Breakdown Analysis</CardTitle>
+              <CardDescription>Where your money is being spent</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {expenseBreakdown && expenseBreakdown.length > 0 ? (
+                <>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
-                      <Pie data={expenseBreakdown} dataKey="amount" nameKey="category" cx="50%" cy="50%" outerRadius={100} label>
-                        {expenseBreakdown.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                      <Pie
+                        data={expenseBreakdown}
+                        dataKey="totalAmount"
+                        nameKey="category"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label
+                      >
+                        {expenseBreakdown.map((entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={["#3b82f6", "#10b981", "#f97316", "#8b5cf6", "#ec4899", "#14b8a6", "#f59e0b", "#6366f1", "#ef4444"][index % 9]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => `$${typeof value === "number" ? value.toFixed(2) : value}`} />
+                      <Tooltip formatter={(value) => formatCurrency(value)} />
                     </PieChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Expense Categories</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {expenseBreakdown.map((e, i) => (
-                      <div key={i} className="flex justify-between items-center p-2 border rounded">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded" style={{ backgroundColor: pieColors[i % pieColors.length] }} />
-                          <span>{e.category}</span>
-                        </div>
-                        <span className="font-medium">${e.amount.toFixed(2)}</span>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Category</TableHead>
+                          <TableHead className="text-right">Count</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                          <TableHead className="text-right">% of Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {expenseBreakdown.map((expense: any) => (
+                          <TableRow key={expense.category}>
+                            <TableCell className="font-medium">{expense.category}</TableCell>
+                            <TableCell className="text-right">{expense.count}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(expense.totalAmount)}</TableCell>
+                            <TableCell className="text-right">{expense.percentageOfTotal}%</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                </CardContent>
-              </Card>
-            </>
-          ) : (
-            <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">No expense data available yet</CardContent>
-            </Card>
-          )}
+
+                  <Button onClick={() => downloadCSV(expenseBreakdown, "expense-breakdown.csv")}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Report
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">No expense data available</div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

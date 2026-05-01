@@ -140,3 +140,69 @@ export const costBreakdowns = mysqlTable("costBreakdowns", {
 
 export type CostBreakdown = typeof costBreakdowns.$inferSelect;
 export type InsertCostBreakdown = typeof costBreakdowns.$inferInsert;
+
+/**
+ * Chart of Accounts - defines all accounts for double-entry bookkeeping
+ * Accounts are categorized as: Assets, Liabilities, Equity, Revenue, Expenses
+ */
+export const chartOfAccounts = mysqlTable("chartOfAccounts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  accountCode: varchar("accountCode", { length: 20 }).notNull(),
+  accountName: varchar("accountName", { length: 255 }).notNull(),
+  accountType: mysqlEnum("accountType", ["asset", "liability", "equity", "revenue", "expense"]).notNull(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ChartOfAccount = typeof chartOfAccounts.$inferSelect;
+export type InsertChartOfAccount = typeof chartOfAccounts.$inferInsert;
+
+/**
+ * Journal Entries - records all financial transactions with debit/credit
+ */
+export const journalEntries = mysqlTable("journalEntries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  entryDate: timestamp("entryDate").notNull(),
+  description: varchar("description", { length: 255 }).notNull(),
+  referenceType: mysqlEnum("referenceType", ["sale", "expense", "batch", "adjustment", "other"]).notNull(),
+  referenceId: int("referenceId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type InsertJournalEntry = typeof journalEntries.$inferInsert;
+
+/**
+ * Journal Entry Lines - individual debit/credit lines for each journal entry
+ */
+export const journalEntryLines = mysqlTable("journalEntryLines", {
+  id: int("id").autoincrement().primaryKey(),
+  journalEntryId: int("journalEntryId").notNull(),
+  accountId: int("accountId").notNull(),
+  debitAmount: decimal("debitAmount", { precision: 12, scale: 2 }).default("0"),
+  creditAmount: decimal("creditAmount", { precision: 12, scale: 2 }).default("0"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type JournalEntryLine = typeof journalEntryLines.$inferSelect;
+export type InsertJournalEntryLine = typeof journalEntryLines.$inferInsert;
+
+/**
+ * Discount Transactions - tracks all discounts applied to sales
+ */
+export const discountTransactions = mysqlTable("discountTransactions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  saleId: int("saleId").notNull(),
+  discountType: mysqlEnum("discountType", ["percentage", "fixed"]).notNull(),
+  discountValue: decimal("discountValue", { precision: 10, scale: 2 }).notNull(),
+  discountAmount: decimal("discountAmount", { precision: 12, scale: 2 }).notNull(),
+  reason: varchar("reason", { length: 255 }),
+  appliedDate: timestamp("appliedDate").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DiscountTransaction = typeof discountTransactions.$inferSelect;
+export type InsertDiscountTransaction = typeof discountTransactions.$inferInsert;
